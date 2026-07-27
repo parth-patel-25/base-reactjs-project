@@ -10,7 +10,7 @@ globs: ["**/*.ts", "**/*.tsx"]
 ### Location
 All API routes MUST be defined in:
 ```
-src/shared/constants/api-routes.ts
+src/shared/constants/api/index.ts
 ```
 
 ### Why Centralized Routes?

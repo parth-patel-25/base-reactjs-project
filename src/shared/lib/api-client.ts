@@ -1,6 +1,6 @@
 import axios from "axios"
 import { createLogger } from "./logger"
-import { API_ROUTES } from "@shared/constants/api-routes"
+import { API_ROUTES } from "@shared/constants/api"
 
 const logger = createLogger("API")
 

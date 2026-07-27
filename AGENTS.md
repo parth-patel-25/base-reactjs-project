@@ -290,12 +290,12 @@ Add to `.eslintrc` to enforce logger usage:
 ## API Rules
 
 ### Centralized API Routes (MANDATORY)
-- **ALL API routes MUST be defined in `@shared/constants/api-routes.ts`**
+- **ALL API routes MUST be defined in `@shared/constants/api/index.ts`**
 - **NEVER hardcode route strings in services or components**
 - **Add new endpoints here FIRST before using them**
 
 ```typescript
-// src/shared/constants/api-routes.ts
+// src/shared/constants/api/index.ts
 export const API_ROUTES = {
   AUTH: {
     LOGIN: "/auth/login",

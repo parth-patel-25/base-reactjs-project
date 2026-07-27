@@ -14,7 +14,7 @@ This document provides detailed information about API integration.
 
 ## API Routes
 
-**Location:** `src/shared/constants/api-routes.ts`
+**Location:** `src/shared/constants/api/index.ts`
 
 All API routes are centralized in a single file for better maintainability.
 
