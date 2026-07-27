@@ -4,10 +4,57 @@ This document provides detailed information about API integration.
 
 ## Table of Contents
 
+- [API Routes](#api-routes)
 - [API Client](#api-client)
 - [Creating Services](#creating-services)
 - [Error Handling](#error-handling)
 - [Authentication](#authentication)
+
+---
+
+## API Routes
+
+**Location:** `src/shared/constants/api-routes.ts`
+
+All API routes are centralized in a single file for better maintainability.
+
+### Route Structure
+```typescript
+export const API_ROUTES = {
+  AUTH: {
+    LOGIN: "/auth/login",
+    REGISTER: "/auth/register",
+    LOGOUT: "/auth/logout",
+    ME: "/auth/me",
+  },
+  USERS: {
+    BASE: "/users",
+    BY_ID: (id: string) => `/users/${id}`,
+  },
+  POSTS: {
+    BASE: "/posts",
+    BY_ID: (id: string) => `/posts/${id}`,
+    COMMENTS: (id: string) => `/posts/${id}/comments`,
+  },
+  // ... more routes
+} as const
+```
+
+### Using Routes in Services
+```typescript
+import { API_ROUTES } from "@shared/constants/api-routes"
+
+export const userService = {
+  getList: () => apiClient.get(API_ROUTES.USERS.BASE),
+  getById: (id: string) => apiClient.get(API_ROUTES.USERS.BY_ID(id)),
+}
+```
+
+### Adding New Routes
+1. Add endpoint to `api-routes.ts`
+2. Follow naming convention (UPPER_SNAKE_CASE)
+3. Include BY_ID for resources with CRUD
+4. Use in service files
 
 ---
 

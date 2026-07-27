@@ -289,32 +289,52 @@ Add to `.eslintrc` to enforce logger usage:
 
 ## API Rules
 
+### Centralized API Routes (MANDATORY)
+- **ALL API routes MUST be defined in `@shared/constants/api-routes.ts`**
+- **NEVER hardcode route strings in services or components**
+- **Add new endpoints here FIRST before using them**
+
+```typescript
+// src/shared/constants/api-routes.ts
+export const API_ROUTES = {
+  AUTH: {
+    LOGIN: "/auth/login",
+    REGISTER: "/auth/register",
+  },
+  USERS: {
+    BASE: "/users",
+    BY_ID: (id: string) => `/users/${id}`,
+  },
+} as const
+```
+
 ### API Client
-- Use the shared `apiClient` from `shared/lib/api-client`
+- Use the shared `apiClient` from `@shared/lib/api-client`
 - Create feature-specific API functions in `services/`
 - Handle errors consistently with toast notifications
 
 ### API Function Structure
 ```typescript
 // features/users/services/user.service.ts
-import { apiClient } from "@/shared/lib/api-client"
-import type { User, PaginatedResponse, PaginationParams } from "@/shared/types"
+import { apiClient } from "@shared/lib/api-client"
+import { API_ROUTES } from "@shared/constants/api-routes"
+import type { User, PaginatedResponse, PaginationParams } from "@shared/types"
 
 export const userService = {
   getList: (params: PaginationParams) =>
-    apiClient.get<PaginatedResponse<User>>("/users", { params }),
+    apiClient.get<PaginatedResponse<User>>(API_ROUTES.USERS.BASE, { params }),
 
   getById: (id: string) =>
-    apiClient.get<User>(`/users/${id}`),
+    apiClient.get<User>(API_ROUTES.USERS.BY_ID(id)),
 
   create: (data: Omit<User, "id" | "createdAt" | "updatedAt">) =>
-    apiClient.post<User>("/users", data),
+    apiClient.post<User>(API_ROUTES.USERS.BASE, data),
 
   update: (id: string, data: Partial<User>) =>
-    apiClient.put<User>(`/users/${id}`, data),
+    apiClient.put<User>(API_ROUTES.USERS.BY_ID(id), data),
 
   delete: (id: string) =>
-    apiClient.delete(`/users/${id}`),
+    apiClient.delete(API_ROUTES.USERS.BY_ID(id)),
 }
 ```
 

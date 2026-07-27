@@ -1,5 +1,6 @@
 import axios from "axios"
 import { createLogger } from "./logger"
+import { API_ROUTES } from "@shared/constants/api-routes"
 
 const logger = createLogger("API")
 
@@ -35,7 +36,7 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       logger.warn("Unauthorized access, redirecting to login")
       localStorage.removeItem("auth-token")
-      window.location.href = "/auth"
+      window.location.href = API_ROUTES.AUTH.LOGIN
     } else {
       logger.error(`API error: ${error.response?.status || "Network error"}`, error)
     }
