@@ -1,6 +1,3 @@
-export { API_ROUTES } from "./api"
-export type { ApiRouteKey, ApiRoute } from "./api"
-
 export const APP_NAME = "Base React Project"
 export const APP_VERSION = "1.0.0"
 
