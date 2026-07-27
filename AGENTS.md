@@ -420,10 +420,56 @@ export const userService = {
 
 ## Git Rules
 
-- Commit messages: `type(scope): description`
-- Types: feat, fix, docs, style, refactor, test, chore
-- Keep commits small and focused
-- Never commit secrets or API keys
+### Commit Message Format (MANDATORY)
+```
+<icon> <type>: <description>
+```
+
+### Commit Types & Icons
+| Icon | Type | Description |
+|------|------|-------------|
+| ✨ | feature | New feature |
+| 🐞 | fix | Bug fix |
+| 📄 | docs | Documentation |
+| 🚅 | perfs | Performance |
+| ♻️ | refactor | Code refactoring |
+| 🎨 | style | UI/Style changes |
+| ✅ | test | Adding tests |
+| 🔧 | chore | Maintenance |
+| ⚡ | hotfix | Critical fix |
+| 🚀 | deploy | Deployment |
+
+### Rules
+- **ONE LINER ONLY** - Single line commits
+- **Max 100 characters** recommended
+- Use **imperative mood** ("add" not "added")
+- **No period** at end
+- Be **specific but concise**
+
+### Examples
+```
+✨feature: add user authentication system
+🐞 fix: resolve memory leak in useEffect
+📄 docs: update API integration guide
+HTTPRequestOperation perfs: implement virtual scrolling
+♻️ refactor: extract shared hooks
+🎨 style: add dark mode support
+✅ test: add unit tests for API client
+🔧 chore: upgrade React to v19
+⚡ hotfix: fix critical security issue
+🚀 deploy: setup GitHub Actions workflow
+```
+
+### Bad Examples
+```
+❌ fixed stuff
+❌ WIP
+❌ updates
+❌ fix bug
+❌ added new feature
+```
+
+Keep commits small and focused. Never commit secrets or API keys.
 
 ## Documentation Rules (MANDATORY)
 
