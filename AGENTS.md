@@ -18,11 +18,12 @@ src/
 │   └── middleware/   # API interceptors, guards
 └── features/        # Feature-based modules
     └── [feature]/
-        ├── components/  # Feature-specific components
-        ├── hooks/       # Feature-specific hooks
-        ├── services/    # API calls and business logic
-        ├── types/       # Feature-specific types
-        └── index.tsx    # Feature entry point
+        ├── components/   # Feature-specific components
+        ├── hooks/        # Feature-specific hooks
+        ├── services/     # API calls and business logic
+        ├── validations/  # Zod validation schemas (MANDATORY)
+        ├── types/        # Feature-specific types
+        └── index.tsx     # Feature entry point
 ```
 
 ## File Size Rules
@@ -79,6 +80,67 @@ export function Component({ title, onSubmit }: ComponentProps) {
   )
 }
 ```
+
+## Form Validation Rules (MANDATORY)
+
+### Every Input MUST Have Validation
+- **ANY user input field** (Input, Textarea, Select, Checkbox, RadioGroup, Switch, custom controls) **MUST be validated**
+- **NEVER render an input without a validation schema**
+- **NEVER trust raw form data** - validate before submit, before API calls, and before persisting
+
+### Feature-Based Validations Folder (MANDATORY)
+- ALL validation schemas live in `src/features/[feature]/validations/`
+- **NEVER** place schemas in components, hooks, or services
+
+```
+src/features/[feature]/validations/
+├── index.ts              # Barrel exports
+└── [entity].schema.ts    # e.g. login.schema.ts, user-profile.schema.ts
+```
+
+- Files: `kebab-case.schema.ts` (e.g., `login.schema.ts`)
+- Schema exports: `PascalCaseSchema` (e.g., `LoginSchema`)
+- Derived types: `type LoginInput = z.infer<typeof LoginSchema>`
+
+### Validation Library
+- Use `zod` for ALL validation schemas
+- Use `react-hook-form` with `zodResolver` for forms
+- Derive input types with `z.infer` - never hand-write duplicate types
+- Never write manual inline validation when a schema can express it
+
+### Context-Aware Validation (MANDATORY)
+- Consider the **context and purpose** of each input before writing rules
+- The same field has different requirements per context (e.g., password for login = required only; password for signup = min 8 + uppercase + lowercase + number)
+- Base rules on what the field is FOR, the data source, and business requirements
+- Use `.refine()` / `.superRefine()` for cross-field rules (e.g., confirm password matches)
+
+### Toast on Validation Errors (MANDATORY)
+- On validation failure, **ALWAYS** show an error toast via `sonner` (`toast.error`)
+- Show the **FIRST** validation error message in the toast
+- Keep inline field-level errors as well - toast + inline errors together
+- **NEVER** silently swallow validation errors
+- Server/API validation errors (e.g., 400 responses) must also surface as `toast.error`
+
+```tsx
+const { register, handleSubmit, formState: { errors } } = useForm<LoginInput>({
+  resolver: zodResolver(LoginSchema),
+})
+
+const onInvalid = (errs: FieldErrors<LoginInput>) => {
+  const first = Object.values(errs)[0]
+  toast.error(first?.message ?? "Please fix the highlighted fields")
+}
+
+return <form onSubmit={handleSubmit(onSubmit, onInvalid)}>
+```
+
+### Validation Checklist
+- [ ] Every input registered and covered by a zod schema
+- [ ] Schema lives in `features/[feature]/validations/`
+- [ ] Rules match the input's context
+- [ ] `zodResolver` wired into `useForm`
+- [ ] Inline error message rendered for every field
+- [ ] `toast.error` fires with the first error on invalid submit
 
 ## Data Display Rules
 

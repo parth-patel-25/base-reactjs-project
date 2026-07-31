@@ -29,6 +29,7 @@ src/
         ├── components/
         ├── hooks/
         ├── services/
+        ├── validations/  # Zod validation schemas (MANDATORY)
         ├── types/
         └── index.tsx
 ```
