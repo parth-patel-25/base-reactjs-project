@@ -156,6 +156,7 @@ Full documentation with code examples in [references/][references]:
 | [js-animations-reanimated.md][js-animations-reanimated] | MEDIUM | Reanimated worklets |
 | [js-bottomsheet.md][js-bottomsheet] | HIGH | Bottom sheet optimization |
 | [js-uncontrolled-components.md][js-uncontrolled-components] | HIGH | TextInput optimization |
+| [js-images-caching.md][js-images-caching] | HIGH | Image caching and right-sizing with `expo-image` |
 
 ### Native (`native-*`)
 
@@ -198,6 +199,7 @@ Full documentation with code examples in [references/][references]:
 | Animation drops frames | [js-animations-reanimated.md][js-animations-reanimated] |
 | Bottom sheet jank/re-renders | [js-bottomsheet.md][js-bottomsheet] → [js-animations-reanimated.md][js-animations-reanimated] |
 | List scroll jank | [js-lists-flatlist-flashlist.md][js-lists-flatlist-flashlist] |
+| Images re-fetch on scroll or blank on load | [js-images-caching.md][js-images-caching] → [js-lists-flatlist-flashlist.md][js-lists-flatlist-flashlist] |
 | TextInput lag | [js-uncontrolled-components.md][js-uncontrolled-components] |
 | Native module slow | [native-turbo-modules.md][native-turbo-modules] → [native-threading-model.md][native-threading-model] |
 | Native library alignment issue | [native-android-16kb-alignment.md][native-android-16kb-alignment] |
@@ -213,6 +215,7 @@ Full documentation with code examples in [references/][references]:
 [js-animations-reanimated]: references/js-animations-reanimated.md
 [js-bottomsheet]: references/js-bottomsheet.md
 [js-uncontrolled-components]: references/js-uncontrolled-components.md
+[js-images-caching]: references/js-images-caching.md
 [native-turbo-modules]: references/native-turbo-modules.md
 [native-sdks-over-polyfills]: references/native-sdks-over-polyfills.md
 [native-measure-tti]: references/native-measure-tti.md
