@@ -444,7 +444,6 @@ Before creating or modifying a large component, ask:
 
 Do not apply these rules mechanically. Avoid:
 
-- Splitting every component into tiny components just to reduce line count.
 - Adding `useMemo`/`useCallback` everywhere.
 - Creating an API request for every component.
 - Removing all duplication at any cost.
