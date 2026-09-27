@@ -81,6 +81,404 @@ export function Component({ title, onSubmit }: ComponentProps) {
 }
 ```
 
+## Component Architecture Rules (MANDATORY)
+
+### Purpose
+
+Keep features easy to understand, change, test, and extend. The goal is **not** to make every file small. The goal is to create clear ownership boundaries so each component owns only the state, data, and behavior it is actually responsible for.
+
+---
+
+### Rule 1 — Pass Narrow Props, Not the Entire Feature
+
+**Avoid** passing large feature objects, complete permission models, unrelated state, or many callbacks through component layers when the child only needs a small part of them.
+
+```tsx
+// ❌ AVOID
+<UsersTable
+  user={user}
+  permissions={permissions}
+  filters={filters}
+  selectedUser={selectedUser}
+  loading={loading}
+  deleteUser={deleteUser}
+  updateUser={updateUser}
+  setModalOpen={setModalOpen}
+  notifications={notifications}
+/>
+```
+
+```tsx
+// ✅ PREFER
+<UsersTable
+  rows={users}
+  onRowSelected={handleUserSelected}
+/>
+```
+
+A child should understand its own responsibility, not the entire page. If a component needs 10–15 unrelated props, stop and check whether its contract is too broad.
+
+---
+
+### Rule 2 — Avoid Unnecessary New Objects, Arrays, and Functions During Render
+
+React creates new object and array references when they are declared during render.
+
+```tsx
+// ❌ AVOID — static config recreated on every render
+<ResultsTable
+  columns={[
+    { key: "name", label: "Name" },
+    { key: "status", label: "Status" },
+  ]}
+  options={{ selectable: true }}
+/>
+```
+
+```tsx
+// ✅ PREFER — static config outside the component
+const columns = [
+  { key: "name", label: "Name" },
+  { key: "status", label: "Status" },
+]
+
+const options = {
+  selectable: true,
+}
+
+function UsersPage() {
+  return <ResultsTable columns={columns} options={options} />
+}
+```
+
+**Do NOT blindly add `useMemo` and `useCallback` everywhere.** First ask:
+
+1. Is this value actually expensive to create?
+2. Does reference identity affect a memoized child?
+3. Does it affect an effect or subscription?
+4. Can the value simply live outside the component?
+5. Can the child receive primitive values instead?
+
+Use memoization when it solves a real problem, not as a default rule.
+
+---
+
+### Rule 3 — Avoid One Giant Query for the Entire Screen
+
+Do not create one page-sized API/query response containing everything the screen might ever need.
+
+```tsx
+// ❌ AVOID
+const { data } = useQuery({
+  queryKey: ["dashboard"],
+  queryFn: getEverything, // returns { stats, users, history, permissions, filters, modalData }
+})
+```
+
+This makes unrelated parts of the UI dependent on the same request.
+
+```tsx
+// ✅ PREFER — meaningful data boundaries
+function Dashboard() {
+  return (
+    <>
+      <Stats />
+      <UsersTable />
+      <History />
+    </>
+  )
+}
+
+function Stats() {
+  const { data } = useQuery({ queryKey: ["stats"], queryFn: getStats })
+  return <StatsView data={data} />
+}
+
+function UsersTable() {
+  const { data } = useQuery({ queryKey: ["users"], queryFn: getUsers })
+  return <Table data={data} />
+}
+```
+
+**Do NOT make a network request for every tiny component.** Use boundaries based on meaningful feature lifecycles:
+
+- Primary content
+- Secondary panel
+- History
+- Details
+- Expensive/optional data
+
+The goal is to avoid unnecessary coupling, not to maximize the number of API requests.
+
+---
+
+### Rule 4 — Avoid Generic Components With Dozens of Boolean Flags
+
+Do not create one "universal" component that supports many unrelated workflows through boolean props. When flags interact, the number of possible states grows rapidly.
+
+```tsx
+// ❌ AVOID
+<DataTable
+  searchable
+  selectable
+  showToolbar
+  allowExport={canExport}
+  inlineEdit={mode === "admin"}
+  compact={isInsideModal}
+  hidePagination={rows.length < 20}
+  stickyHeader={!isMobile}
+/>
+```
+
+```tsx
+// ✅ PREFER — composition
+<Table>
+  <Toolbar />
+  <TableBody />
+  <Pagination />
+</Table>
+```
+
+Or create a specific feature when the workflow is genuinely different:
+
+```tsx
+// ✅ PREFER
+<EditableUsersTable />
+```
+
+Reuse genuine structure. Do not force different workflows into one component just because their UI looks similar. Some duplication is acceptable when it prevents a complicated conditional component from becoming a second application.
+
+---
+
+### Rule 5 — Let Substantial Modals Own Their Internal State
+
+The page decides **which record/action is being opened**. The modal/dialog owns its internal form and workflow state.
+
+```tsx
+// ❌ AVOID — page owns table, modal, form, validation, saving, and errors
+function UsersPage() {
+  const [modalOpen, setModalOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState(null)
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
+  // ...
+}
+```
+
+```tsx
+// ✅ PREFER — page owns selection only
+function UsersPage() {
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+
+  return (
+    <>
+      <UsersTable onEdit={setSelectedUser} />
+
+      {selectedUser && (
+        <EditUserDialog
+          user={selectedUser}
+          onClose={() => setSelectedUser(null)}
+        />
+      )}
+    </>
+  )
+}
+```
+
+```tsx
+// ✅ PREFER — dialog owns its workflow
+function EditUserDialog({ user, onClose }: EditUserDialogProps) {
+  const [name, setName] = useState(user.name)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
+
+  async function handleSubmit() {
+    setSaving(true)
+    try {
+      await updateUser(user.id, { name })
+      onClose()
+    } catch {
+      setError("Failed to save user")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return <Dialog>{/* dialog form */}</Dialog>
+}
+```
+
+**Ownership rule**
+
+Parent owns:
+- Which record is selected
+- Whether the feature should be opened
+- What should happen after success
+
+Modal owns:
+- Form fields
+- Validation
+- Submission state
+- Internal steps
+- Local errors
+- Dialog-specific async behavior
+
+---
+
+### Rule 6 — Move Permission Decisions Out of Scattered JSX
+
+Avoid repeating raw business rules throughout JSX.
+
+```tsx
+// ❌ AVOID
+{user.role === "admin" && record.status !== "archived" && <DeleteButton />}
+{user.role === "admin" && <EditButton />}
+```
+
+This makes business policy difficult to find and easy to make inconsistent.
+
+```tsx
+// ✅ PREFER — explicit capabilities
+const capabilities = getRecordCapabilities({ user, record, organization })
+// => { canEdit: true, canDelete: false, canExport: true }
+```
+
+```tsx
+// ✅ PREFER — JSX becomes simple
+{capabilities.canEdit && <EditButton />}
+{capabilities.canDelete && <DeleteButton />}
+{capabilities.canExport && <ExportButton />}
+```
+
+**Important security rule:** Frontend permission checks are for UI behavior. They are **NOT** the real security boundary. The backend must still enforce authorization:
+
+```ts
+if (!userCanDelete) {
+  return res.status(403).json({ message: "Forbidden" })
+}
+```
+
+Keep authorization policy centralized and testable whenever practical.
+
+---
+
+### Rule 7 — Avoid Page-Wide `isLoading` and `error` for Unrelated Operations
+
+Do not use one loading/error state for several independent workflows. If the page can load, refresh, save, delete, and export, then one `isLoading` cannot accurately describe all operations.
+
+```tsx
+// ❌ AVOID
+const [isLoading, setIsLoading] = useState(false)
+const [error, setError] = useState(null)
+```
+
+```tsx
+// ✅ PREFER — operation-specific status
+const [isSaving, setIsSaving] = useState(false)
+const [isDeleting, setIsDeleting] = useState(false)
+const [isExporting, setIsExporting] = useState(false)
+```
+
+```tsx
+// ✅ PREFER
+<button disabled={isSaving}>{isSaving ? "Saving..." : "Save"}</button>
+<button disabled={isDeleting}>{isDeleting ? "Deleting..." : "Delete"}</button>
+<button disabled={isExporting}>{isExporting ? "Exporting..." : "Export"}</button>
+```
+
+**Error ownership:** Prefer errors to stay close to the workflow that caused them.
+
+- Table request failure → table retry UI
+- Save failure → form/dialog error
+- Export failure → export action error
+- Optional history failure → history retry UI
+
+Do not make the entire page unusable because an optional section failed.
+
+---
+
+### Component Ownership Checklist
+
+Before creating or modifying a large component, ask:
+
+**Props**
+- Does this child receive only what it needs?
+- Am I passing the entire feature object unnecessarily?
+- Are there too many unrelated props?
+
+**Render values**
+- Am I creating static objects/arrays/functions on every render?
+- Does reference identity actually matter?
+- Can static configuration move outside the component?
+- Am I using `useMemo`/`useCallback` without a real reason?
+
+**Data**
+- Is one query loading unrelated data?
+- Does each meaningful feature have an appropriate data boundary?
+- Am I creating too many tiny requests?
+
+**Reuse**
+- Is this component becoming a collection of boolean flags?
+- Are the flags interacting in many combinations?
+- Would composition or a focused component be clearer?
+
+**Modals**
+- Does the page own form state that belongs to the modal?
+- Can the modal own its draft, validation, saving, and errors?
+
+**Permissions**
+- Are raw permission/business rules scattered through JSX?
+- Can I expose named capabilities instead?
+- Is backend authorization still enforcing the actual security?
+
+**Loading/Error**
+- Does one `isLoading` represent multiple operations?
+- Does one `error` represent multiple unrelated failures?
+- Can status and errors belong to the operation that owns them?
+
+---
+
+### What NOT To Do
+
+Do not apply these rules mechanically. Avoid:
+
+- Splitting every component into tiny components just to reduce line count.
+- Adding `useMemo`/`useCallback` everywhere.
+- Creating an API request for every component.
+- Removing all duplication at any cost.
+- Creating abstractions only because two screens look visually similar.
+- Moving every piece of state into another file without clear ownership.
+- Treating frontend permission checks as security.
+- Making the parent coordinate every child workflow.
+
+---
+
+### Primary Principle
+
+When deciding where code belongs, ask:
+
+> **"Who is responsible for this decision?"**
+
+- If the answer is the table, keep it with the table.
+- If the answer is the modal, keep it with the modal.
+- If the answer is a permission policy, centralize the capability decision.
+- If the answer is an API/data lifecycle, give that feature an appropriate data boundary.
+- If several unrelated workflows depend on one parent, reconsider the ownership boundaries.
+
+**Final Rule:** Do not optimize for smaller files. Optimize for:
+
+1. Clear ownership
+2. Narrow component contracts
+3. Independent feature lifecycles
+4. Predictable state
+5. Explicit business decisions
+6. Meaningful data boundaries
+7. Components that know only what they need to know
+
+A component can remain large when the interface itself is large. The problem is not the number of lines. The problem is when one component becomes responsible for too many unrelated decisions.
+
 ## Form Validation Rules (MANDATORY)
 
 ### Every Input MUST Have Validation
